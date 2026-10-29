@@ -228,12 +228,21 @@ events = get_all_events()
 # PAGINA 1: ROOSTER
 # ==========================================
 if st.session_state['current_page'] == "Rooster":
-    col_h1, col_h2 = st.columns([3, 1])
+    col_h1, col_h2, col_h3 = st.columns([2, 1, 1])
     with col_h1:
         st.title("📅 Somtoday Rooster & Voortgang")
     with col_h2:
         if st.button("➕ Afspraak inplannen", key="top_inplannen"):
             go_to_page("Inplannen")
+            st.rerun()
+    with col_h3:
+        if st.button("🗑️ Wis alle taken", key="clear_db_btn"):
+            conn = sqlite3.connect('planner.db')
+            c = conn.cursor()
+            c.execute('DELETE FROM events')
+            conn.commit()
+            conn.close()
+            st.success("Alle taken gewist!")
             st.rerun()
 
     study_events = [e for e in events if e['type'] == 'study']
@@ -328,7 +337,7 @@ if st.session_state['current_page'] == "Rooster":
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
-    st.write("Elk onderwerp wordt nu gegarandeerd **minimaal 2 keer** gelijkmatig verspreid over alle beschikbare studiedagen (in halve blokken van 30 min tussen 16:00 en 22:00).")
+    st.write("Elk onderwerp wordt gegarandeerd **minimaal 2 keer** evenredig verspreid over de beschikbare studiedagen (in halve blokken van 30 min tussen 16:00 en 22:00).")
 
     st.markdown("---")
 
@@ -372,7 +381,7 @@ elif st.session_state['current_page'] == "Inplannen":
         elif start_date >= exam_date:
             st.error("De toetsdatum moet ná de startdatum liggen.")
         else:
-            # Gehele database leegmaken
+            # Database leegmaken voordat we nieuwe taken opslaan
             conn = sqlite3.connect('planner.db')
             c = conn.cursor()
             c.execute('DELETE FROM events')
@@ -407,7 +416,6 @@ elif st.session_state['current_page'] == "Inplannen":
 
                 busy_slots = set()
 
-                # Bouw de lijst met te plannen taken: elk onderwerp minstens 2 keer (Sessie 1 en Sessie 2)
                 tasks_to_schedule = []
                 for topic in topics_list:
                     tasks_to_schedule.append(f"{topic} (Deel 1)")
@@ -416,13 +424,10 @@ elif st.session_state['current_page'] == "Inplannen":
                 num_days = len(valid_dates)
                 total_tasks = len(tasks_to_schedule)
 
-                # Wiskundige spreiding: verdeel de taken gelijkmatig over de beschikbare dagen
                 for idx, task_title in enumerate(tasks_to_schedule):
-                    # Bereken de ideale dag-index op basis van gelijkmatige verdeling
                     ideal_day_index = int((idx / total_tasks) * num_days)
                     scheduled = False
                     
-                    # Zoek vanaf de ideale dag naar een vrij slot (voor- en achteruit)
                     for offset in range(num_days):
                         for direction in [1, -1]:
                             day_idx = (ideal_day_index + (offset * direction)) % num_days
@@ -441,7 +446,7 @@ elif st.session_state['current_page'] == "Inplannen":
                                         "date": target_date,
                                         "start_hour": h,
                                         "start_time": start_time_str,
-                                    "duration": 0.5,
+                                        "duration": 0.5,
                                         "location": "Thuis",
                                         "completed": 0
                                     }
@@ -454,7 +459,6 @@ elif st.session_state['current_page'] == "Inplannen":
                         if scheduled:
                             break
 
-                # Toets opslaan
                 exam_task_id = f"exam_{exam_title}_{exam_date}".replace(" ", "_")
                 exam_event = {
                     "id": exam_task_id,
