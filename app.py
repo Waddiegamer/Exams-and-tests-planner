@@ -110,7 +110,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#58a6ff")
 
-# --- STYLING (FIX VOOR BREEDTE EN LAYOUT) ---
+# --- STYLING (VASTE BREEDTE & HALVE BLOKKEN FIX) ---
 st.markdown("""
     <style>
     .grid-container {
@@ -164,12 +164,14 @@ st.markdown("""
         color: #ffffff;
         font-size: 0.70rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        position: relative;
+        position: absolute;
+        left: 2px;
+        right: 2px;
+        width: calc(100% - 4px);
+        max-width: calc(100% - 4px);
+        box-sizing: border-box;
         z-index: 2;
         height: 28px;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -275,7 +277,8 @@ if st.session_state['current_page'] == "Rooster":
         start_week = st.date_input("Selecteer week (Maandag):", datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday()))
 
     days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag"]
-    hours = list(range(6, 23))
+    # BEGINT NU VANAF 08:00 UUR T/M 22:00 UUR
+    hours = list(range(8, 23))
 
     grid_html = '<div class="grid-container">'
     grid_html += '<div class="time-col-header"></div>'
@@ -298,11 +301,15 @@ if st.session_state['current_page'] == "Rooster":
                 except:
                     minutes = 0
                 
-                margin_top_px = int((minutes / 60.0) * 35)
+                # Vaste, strakke verdeling: :00 bovenaan (2px), :30 onderaan (32px)
+                if minutes >= 30:
+                    margin_top_px = 32
+                else:
+                    margin_top_px = 2
                 
                 if item['type'] == 'exam':
                     grid_html += f"""
-                    <div class="exam-card" style="border-left: 4px solid {subject_color}; margin-top: {margin_top_px}px;">
+                    <div class="exam-card" style="border-left: 4px solid {subject_color};">
                         <span class="exam-badge">Toets {item['start_time']}</span>
                         <b style="color:#ffffff;">🔴 {item['title']}</b><br>
                         <small style="color:#f0f0f0;">📍 {item.get('location', 'N.v.t.')}</small>
@@ -311,7 +318,7 @@ if st.session_state['current_page'] == "Rooster":
                 else:
                     opacity = "0.45" if item['completed'] else "1.0"
                     grid_html += f"""
-                    <div class="agenda-card" style="opacity: {opacity}; border-left: 4px solid {subject_color}; margin-top: {margin_top_px}px;">
+                    <div class="agenda-card" style="opacity: {opacity}; border-left: 4px solid {subject_color}; top: {margin_top_px}px;">
                         <span class="time-badge">{item['start_time']}</span>
                         <b style="color:#ffffff;">{item['title']}</b>: <span style="color:#f0f0f0;">{item['topic']}</span>
                     </div>
