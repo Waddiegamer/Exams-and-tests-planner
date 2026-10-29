@@ -94,7 +94,6 @@ ALLOWED_SUBJECTS = [
     "Wiskunde B"
 ]
 
-# Exacte Somtoday Donkerblauwe Kleuren per Vak
 SUBJECT_COLORS = {
     "Bedrijfseconomie": "#263242",
     "Wiskunde B": "#263242",
@@ -110,7 +109,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#263242")
 
-# --- SOMTODAY EXACTE STYLING & HOOG CONTRAST ---
+# --- SOMTODAY EXACTE STYLING & PERFECT CONTRAST FIX ---
 st.markdown("""
     <style>
     /* Hoofdachtergrond van Somtoday */
@@ -120,23 +119,33 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Hoge contrasten voor alle invoervelden, labels en helpteksten */
-    label, .stMarkdown, p, span, div {
+    /* Hoge contrasten voor alle titels en teksten */
+    h1, h2, h3, h4, label, p, span, div {
         color: #ffffff !important;
-        font-weight: 500;
+        font-weight: 600 !important;
     }
 
-    .stCaption, small {
-        color: #f0f0f0 !important;
-        font-weight: 600;
+    /* Fix voor Invoervelden (Datums, Tijden, TextInputs) */
+    input, textarea, select, div[data-baseweb="select"], div[data-baseweb="input"] {
+        background-color: #1a1e26 !important;
+        color: #ffffff !important;
+        border: 1px solid #3e4c5e !important;
+        border-radius: 6px !important;
     }
 
-    /* Invoervelden achtergrond en tekst */
-    input, textarea, select, div[data-baseweb="select"] {
-        background-color: #1e242d !important;
+    /* Datumpicker & Tijdinputs specifiek fixen */
+    input[type="date"], input[type="time"] {
+        background-color: #1a1e26 !important;
         color: #ffffff !important;
-        border: 1px solid #4a5568 !important;
-        font-weight: bold !important;
+        filter: invert(0) !important;
+    }
+
+    /* Target specifieke Streamlit widget containers */
+    div[data-testid="stForm"] {
+        background-color: #161a22;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #28313e;
     }
     
     /* Rooster Grid Naadloos Aansluitend */
@@ -145,7 +154,7 @@ st.markdown("""
         grid-template-columns: 65px repeat(5, 1fr);
         background-color: #12151a;
         border: 1px solid #232a35;
-        border-radius: 4px;
+        border-radius: 6px;
         overflow: hidden;
     }
     
@@ -233,22 +242,23 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* Actieknoppen */
-    div.stButton > button {
-        background-color: #238636;
+    /* Actieknoppen opvallend groen */
+    button[kind="primary"], div.stButton > button, button[data-testid="baseButton-secondaryFormSubmit"] {
+        background-color: #238636 !important;
         color: #ffffff !important;
-        border-radius: 6px;
-        border: none;
-        font-weight: bold;
-        padding: 0.5rem 1.2rem;
+        border-radius: 6px !important;
+        border: none !important;
+        font-weight: bold !important;
+        padding: 0.6rem 1.5rem !important;
+        width: auto !important;
     }
-    div.stButton > button:hover {
-        background-color: #2ea043;
+    button:hover {
+        background-color: #2ea043 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- DIRECTE FUNCTIONELE NAVIGATIEKNOPPEN ---
+# --- DIRECTE NAVIGATIEK NOPPEN ---
 c_btn1, c_btn2, _ = st.columns([1.2, 1.8, 4])
 with c_btn1:
     if st.button("📅 Naar Rooster", key="nav_r"):
@@ -349,7 +359,7 @@ if st.session_state['current_page'] == "Rooster":
         st.info("Geen studietaken ingepland in deze periode.")
 
 # ==========================================
-# PAGINA 2: INPLANNEN FORMULIER
+# PAGINA 2: INPLANNEN FORMULIER (ZONDER SCREENSHOT OPTIE)
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
@@ -370,9 +380,7 @@ elif st.session_state['current_page'] == "Inplannen":
             location = st.text_input("Lokaal / Ruimte:", "f103")
             exam_duration = st.number_input("Tijdsduur van de toets (in uren):", min_value=0.5, max_value=8.0, value=1.0, step=0.5)
 
-        st.header("2. Stof & Screenshot")
-        uploaded_file = st.file_uploader("Upload eventueel een screenshot van je PTA:", type=["png", "jpg", "jpeg"])
-        
+        st.header("2. Stof & Hoofdstukken")
         default_text = "Hoofdstuk 1, Hoofdstuk 2, Paragraaf 3.1, Paragraaf 3.2, Oefentoets maken"
         raw_topics = st.text_area("Onderwerpen/Hoofdstukken (gescheiden door komma):", default_text)
 
