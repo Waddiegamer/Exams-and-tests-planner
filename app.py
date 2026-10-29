@@ -110,7 +110,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#58a6ff")
 
-# --- STYLING ---
+# --- STYLING (FIX VOOR BREEDTE EN LAYOUT) ---
 st.markdown("""
     <style>
     .grid-container {
@@ -155,36 +155,46 @@ st.markdown("""
         padding: 2px;
         position: relative;
         background-color: #12151a;
+        overflow: hidden;
     }
     .agenda-card {
         background-color: #263242;
         border-radius: 4px;
-        padding: 2px 5px;
+        padding: 2px 4px;
         color: #ffffff;
-        font-size: 0.72rem;
+        font-size: 0.70rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         position: relative;
         z-index: 2;
         height: 28px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .exam-card {
         background-color: #263242;
         border-radius: 4px;
         padding: 3px 6px;
         color: #ffffff;
-        font-size: 0.76rem;
+        font-size: 0.74rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         position: relative;
         z-index: 2;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
     .time-badge {
         float: right;
         background-color: rgba(0,0,0,0.35);
         color: #ffffff;
-        padding: 0px 4px;
-        border-radius: 6px;
-        font-size: 0.6rem;
+        padding: 0px 3px;
+        border-radius: 4px;
+        font-size: 0.55rem;
         font-weight: bold;
     }
     .exam-badge {
@@ -381,7 +391,6 @@ elif st.session_state['current_page'] == "Inplannen":
         elif start_date >= exam_date:
             st.error("De toetsdatum moet ná de startdatum liggen.")
         else:
-            # Database leegmaken voordat we nieuwe taken opslaan
             conn = sqlite3.connect('planner.db')
             c = conn.cursor()
             c.execute('DELETE FROM events')
