@@ -110,7 +110,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#58a6ff")
 
-# --- STYLING (VASTE BREEDTE & HALVE BLOKKEN FIX) ---
+# --- STYLING (STRIKTE BREEDTE- EN HOOGTEBEVEILIGING) ---
 st.markdown("""
     <style>
     .grid-container {
@@ -150,12 +150,14 @@ st.markdown("""
     }
     .grid-cell {
         height: 65px;
+        max-height: 65px;
         border-bottom: 1px solid #1e242d;
         border-right: 1px solid #30363d;
         padding: 2px;
         position: relative;
         background-color: #12151a;
         overflow: hidden;
+        box-sizing: border-box;
     }
     .agenda-card {
         background-color: #263242;
@@ -167,11 +169,10 @@ st.markdown("""
         position: absolute;
         left: 2px;
         right: 2px;
-        width: calc(100% - 4px);
-        max-width: calc(100% - 4px);
         box-sizing: border-box;
         z-index: 2;
         height: 28px;
+        max-height: 28px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -277,7 +278,6 @@ if st.session_state['current_page'] == "Rooster":
         start_week = st.date_input("Selecteer week (Maandag):", datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday()))
 
     days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag"]
-    # BEGINT NU VANAF 08:00 UUR T/M 22:00 UUR
     hours = list(range(8, 23))
 
     grid_html = '<div class="grid-container">'
@@ -301,7 +301,6 @@ if st.session_state['current_page'] == "Rooster":
                 except:
                     minutes = 0
                 
-                # Vaste, strakke verdeling: :00 bovenaan (2px), :30 onderaan (32px)
                 if minutes >= 30:
                     margin_top_px = 32
                 else:
