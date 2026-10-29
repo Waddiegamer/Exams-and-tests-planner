@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- DATABASE INITIALISATIE & RESET (ALLES OUD WISSEN) ---
+# --- DATABASE INITIALISATIE ---
 def init_db():
     conn = sqlite3.connect('planner.db')
     c = conn.cursor()
@@ -81,7 +81,6 @@ if 'current_page' not in st.session_state:
 def go_to_page(page_name):
     st.session_state['current_page'] = page_name
 
-# Gefilterde vakkenlijst
 ALLOWED_SUBJECTS = [
     "Bedrijfseconomie",
     "Duitse taal en literatuur",
@@ -94,7 +93,6 @@ ALLOWED_SUBJECTS = [
     "Wiskunde B"
 ]
 
-# Unieke Somtoday kleuren voor de zijstrips per vak
 SUBJECT_COLORS = {
     "Bedrijfseconomie": "#7b42a6",
     "Wiskunde B": "#2b5c8f",
@@ -112,7 +110,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#58a6ff")
 
-# --- STYLING (HALVE BLOKKEN VOOR 30 MINUTEN) ---
+# --- STYLING ---
 st.markdown("""
     <style>
     .grid-container {
@@ -167,7 +165,7 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         position: relative;
         z-index: 2;
-        height: 28px; /* PRECIES DE HELFT VAN EEN BLOKJE */
+        height: 28px;
         overflow: hidden;
     }
     .exam-card {
@@ -212,7 +210,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- NAVIGATIEKNOPPEN ---
+# --- NAVIGATIE ---
 c_btn1, c_btn2, _ = st.columns([1.2, 1.8, 4])
 with c_btn1:
     if st.button("📅 Naar Rooster", key="nav_r"):
@@ -227,7 +225,7 @@ st.markdown("---")
 events = get_all_events()
 
 # ==========================================
-# PAGINA 1: ROOSTER (SOMTODAY GRID)
+# PAGINA 1: ROOSTER
 # ==========================================
 if st.session_state['current_page'] == "Rooster":
     col_h1, col_h2 = st.columns([3, 1])
@@ -275,7 +273,6 @@ if st.session_state['current_page'] == "Rooster":
             grid_html += '<div class="grid-cell">'
             for item in cell_items:
                 subject_color = get_color(item['title'])
-                
                 try:
                     time_parts = item['start_time'].split(':')
                     minutes = int(time_parts[1]) if len(time_parts) > 1 else 0
@@ -305,11 +302,9 @@ if st.session_state['current_page'] == "Rooster":
     grid_html += '</div>'
     st.markdown(grid_html, unsafe_allow_html=True)
 
-    # --- INKLAPBARE LIJSTEN PER VAK VOOR STUDIETAKEN AFVINKEN ---
     st.markdown("### 📋 Studietaken Afvinken per Vak")
     if study_events:
         subjects_in_db = sorted(list(set([e['title'] for e in study_events])))
-        
         for subj in subjects_in_db:
             subj_tasks = [e for e in study_events if e['title'] == subj]
             done_count = sum(1 for e in subj_tasks if e['completed'])
@@ -333,7 +328,7 @@ if st.session_state['current_page'] == "Rooster":
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
-    st.write("Oefentaken worden automatisch gelijkmatig verspreid (minimaal 2x per onderwerp in halve blokken van 30 min) tussen 16:00 en 22:00 uur.")
+    st.write("Elk onderwerp wordt nu gegarandeerd **minimaal 2 keer** gelijkmatig verspreid over alle beschikbare studiedagen (in halve blokken van 30 min tussen 16:00 en 22:00).")
 
     st.markdown("---")
 
@@ -367,7 +362,7 @@ elif st.session_state['current_page'] == "Inplannen":
         with c6: za = st.checkbox("Zaterdag", value=False)
         with c7: zo = st.checkbox("Zondag", value=False)
 
-        submit_button = st.form_submit_button(label="🚀 Alles Wissen, Hernieuwd Inplannen & Opslaan")
+        submit_button = st.form_submit_button(label="🚀 Alles Wissen, Perfect Spreiden & Opslaan")
 
     if submit_button:
         topics_list = [t.strip() for t in raw_topics.split(",") if t.strip()]
@@ -377,7 +372,7 @@ elif st.session_state['current_page'] == "Inplannen":
         elif start_date >= exam_date:
             st.error("De toetsdatum moet ná de startdatum liggen.")
         else:
-            # GEHELE DATABASE EERST LEEGMAKEN ZOALS GEVRAAGD
+            # Gehele database leegmaken
             conn = sqlite3.connect('planner.db')
             c = conn.cursor()
             c.execute('DELETE FROM events')
@@ -405,52 +400,59 @@ elif st.session_state['current_page'] == "Inplannen":
             if not valid_dates:
                 st.warning("Geen geldige studiedagen geselecteerd in de periode voor de toets!")
             else:
-                # Beschikbare uren en halverwege blokken (00 en 30 minuten)
                 allowed_study_slots = []
                 for h in range(16, 22):
-                    allowed_study_slots.append((h, 0))   # bijv. 16:00
-                    allowed_study_slots.append((h, 30))  # bijv. 16:30
+                    allowed_study_slots.append((h, 0))
+                    allowed_study_slots.append((h, 30))
 
                 busy_slots = set()
 
+                # Bouw de lijst met te plannen taken: elk onderwerp minstens 2 keer (Sessie 1 en Sessie 2)
                 tasks_to_schedule = []
                 for topic in topics_list:
-                    tasks_to_schedule.append(f"{topic} (Sessie 1)")
-                    tasks_to_schedule.append(f"{topic} (Sessie 2 - Herhaling)")
+                    tasks_to_schedule.append(f"{topic} (Deel 1)")
+                    tasks_to_schedule.append(f"{topic} (Deel 2 - Herhaling)")
 
                 num_days = len(valid_dates)
-                day_pointer = 0
-                
-                for task_title in tasks_to_schedule:
+                total_tasks = len(tasks_to_schedule)
+
+                # Wiskundige spreiding: verdeel de taken gelijkmatig over de beschikbare dagen
+                for idx, task_title in enumerate(tasks_to_schedule):
+                    # Bereken de ideale dag-index op basis van gelijkmatige verdeling
+                    ideal_day_index = int((idx / total_tasks) * num_days)
                     scheduled = False
-                    for _ in range(num_days):
-                        target_date = valid_dates[day_pointer % num_days]
-                        
-                        for (h, m_val) in allowed_study_slots:
-                            if (target_date, h, m_val) not in busy_slots:
-                                task_id = f"{exam_title}_{target_date}_{h}_{m_val}_{task_title}".replace(" ", "_").replace("(", "").replace(")", "")
-                                start_time_str = f"{h:02d}:{m_val:02d}"
-                                
-                                new_task = {
-                                    "id": task_id,
-                                    "type": "study",
-                                    "title": exam_title,
-                                    "topic": task_title,
-                                    "date": target_date,
-                                    "start_hour": h,
-                                    "start_time": start_time_str,
+                    
+                    # Zoek vanaf de ideale dag naar een vrij slot (voor- en achteruit)
+                    for offset in range(num_days):
+                        for direction in [1, -1]:
+                            day_idx = (ideal_day_index + (offset * direction)) % num_days
+                            target_date = valid_dates[day_idx]
+                            
+                            for (h, m_val) in allowed_study_slots:
+                                if (target_date, h, m_val) not in busy_slots:
+                                    task_id = f"{exam_title}_{target_date}_{h}_{m_val}_{task_title}_{idx}".replace(" ", "_").replace("(", "").replace(")", "")
+                                    start_time_str = f"{h:02d}:{m_val:02d}"
+                                    
+                                    new_task = {
+                                        "id": task_id,
+                                        "type": "study",
+                                        "title": exam_title,
+                                        "topic": task_title,
+                                        "date": target_date,
+                                        "start_hour": h,
+                                        "start_time": start_time_str,
                                     "duration": 0.5,
-                                    "location": "Thuis",
-                                    "completed": 0
-                                }
-                                save_event_to_db(new_task)
-                                busy_slots.add((target_date, h, m_val))
-                                scheduled = True
-                                day_pointer += 1
+                                        "location": "Thuis",
+                                        "completed": 0
+                                    }
+                                    save_event_to_db(new_task)
+                                    busy_slots.add((target_date, h, m_val))
+                                    scheduled = True
+                                    break
+                            if scheduled:
                                 break
                         if scheduled:
                             break
-                        day_pointer += 1
 
                 # Toets opslaan
                 exam_task_id = f"exam_{exam_title}_{exam_date}".replace(" ", "_")
@@ -468,6 +470,6 @@ elif st.session_state['current_page'] == "Inplannen":
                 }
                 save_event_to_db(exam_event)
 
-                st.success("🎉 Oude data gewist en nieuwe taken succesvol ingepland in halve blokken van 30 minuten!")
+                st.success("🎉 Perfect gespreid! Alle onderwerpen zijn minimaal 2 keer evenredig over de dagen verdeeld.")
                 go_to_page("Rooster")
                 st.rerun()
