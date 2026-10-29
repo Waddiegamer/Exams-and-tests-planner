@@ -5,7 +5,7 @@ import sqlite3
 
 # --- PAGINA CONFIGURATIE (PC GEOPTIMALISEERD) ---
 st.set_page_config(
-    page_title="Somtoday PC Rooster & PTA Planner",
+    page_title="Somtoday Rooster",
     page_icon="📅",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -34,7 +34,6 @@ def init_db():
 
 init_db()
 
-# Database hulpfuncties
 def get_all_events():
     conn = sqlite3.connect('planner.db')
     c = conn.cursor()
@@ -62,7 +61,7 @@ def save_event_to_db(ev):
     conn = sqlite3.connect('planner.db')
     c = conn.cursor()
     c.execute('''
-        OR REPLACE INTO events (id, type, title, topic, date, start_hour, start_time, duration, location, completed)
+        INSERT OR REPLACE INTO events (id, type, title, topic, date, start_hour, start_time, duration, location, completed)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (ev['id'], ev['type'], ev['title'], ev['topic'], str(ev['date']), ev['start_hour'], ev['start_time'], ev['duration'], ev.get('location', 'N.v.t.'), int(ev.get('completed', 0))))
     conn.commit()
@@ -82,7 +81,7 @@ if 'current_page' not in st.session_state:
 def go_to_page(page_name):
     st.session_state['current_page'] = page_name
 
-# Gefilterde vakkenlijst (zonder CKV, LO, maatschappijleer, etc.)
+# Gefilterde vakkenlijst op basis van jouw screenshot
 ALLOWED_SUBJECTS = [
     "Bedrijfseconomie",
     "Duitse taal en literatuur",
@@ -96,82 +95,123 @@ ALLOWED_SUBJECTS = [
 ]
 
 SUBJECT_COLORS = {
-    "Bedrijfseconomie": "#7b42a6",
-    "Wiskunde B": "#2b5c8f",
-    "Engels": "#2e7d32",
-    "Duitse taal en literatuur": "#4e342e",
-    "Nederlands": "#c62828",
-    "Godsdienst": "#00838f",
-    "Natuurkunde": "#4527a0",
-    "Scheikunde": "#ad1457",
-    "Nat leven techniek": "#ff8f00"
+    "Bedrijfseconomie": "#2c3b53",
+    "Wiskunde B": "#243b55",
+    "Engels": "#1e3d2f",
+    "Duitse taal en literatuur": "#3d2c29",
+    "Nederlands": "#4a2828",
+    "Godsdienst": "#1c3d42",
+    "Natuurkunde": "#312247",
+    "Scheikunde": "#421c38",
+    "Nat leven techniek": "#42381c"
 }
 
 def get_color(subject):
-    return SUBJECT_COLORS.get(subject, "#37474f")
+    return SUBJECT_COLORS.get(subject, "#2b3440")
 
-# --- STYLING (SOMTODAY / DARK MODE / GRID TOT 22:00) ---
+# --- SOMTODAY STYLING ---
 st.markdown("""
     <style>
     .stApp {
-        background-color: #121418;
-        color: #e1e3e6;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #161922;
+        color: #e1e4e8;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .top-nav {
-        background-color: #1c2128;
-        padding: 12px 20px;
-        border-bottom: 1px solid #30363d;
-        margin-bottom: 20px;
-        border-radius: 8px;
+    
+    /* Somtoday Navigatiebalk */
+    .somtoday-nav {
+        background-color: #1e222d;
+        padding: 8px 16px;
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #2a2f3d;
+        margin-bottom: 15px;
+        border-radius: 4px;
     }
-    .grid-header {
-        background-color: #1c2128;
+    
+    .nav-tabs {
+        display: flex;
+        gap: 20px;
+        font-size: 0.95rem;
+        font-weight: 500;
         color: #8b949e;
+    }
+    
+    .nav-tab-active {
+        color: #ffffff;
+        border-bottom: 2px solid #58a6ff;
+        padding-bottom: 4px;
+    }
+
+    /* Rooster Grid Naadloos Aansluitend */
+    .grid-container {
+        display: grid;
+        grid-template-columns: 60px repeat(5, 1fr);
+        background-color: #161922;
+        border-top: 1px solid #2a2f3d;
+    }
+    
+    .day-header {
+        background-color: #1e222d;
+        color: #c9d1d9;
         text-align: center;
         padding: 10px 4px;
-        font-weight: bold;
-        border: 1px solid #30363d;
-        border-radius: 6px;
+        font-weight: 600;
+        border-right: 1px solid #2a2f3d;
+        border-bottom: 1px solid #2a2f3d;
         font-size: 0.9rem;
     }
+    
+    .time-col-header {
+        background-color: #1e222d;
+        border-right: 1px solid #2a2f3d;
+        border-bottom: 1px solid #2a2f3d;
+    }
+
     .time-label {
         color: #8b949e;
         font-size: 0.75rem;
         text-align: right;
-        padding-right: 12px;
-        height: 55px;
-        line-height: 55px;
+        padding-right: 8px;
+        height: 60px;
+        line-height: 60px;
         border-bottom: 1px solid #21262d;
-        font-weight: 600;
+        border-right: 1px solid #2a2f3d;
+        background-color: #161922;
+        font-weight: 500;
     }
+    
     .grid-cell {
-        height: 55px;
+        height: 60px;
         border-bottom: 1px solid #21262d;
-        border-right: 1px solid #30363d;
+        border-right: 1px solid #2a2f3d;
         padding: 2px;
         position: relative;
-        background-color: rgba(255, 255, 255, 0.01);
+        background-color: #161922;
     }
+
+    /* Les & Toets Kaarten in Somtoday stijl */
     .agenda-card {
-        border-radius: 5px;
-        padding: 4px 6px;
+        border-radius: 4px;
+        padding: 5px 8px;
         color: #ffffff;
-        font-size: 0.75rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        font-size: 0.78rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         margin-bottom: 2px;
-        border-left: 4px solid rgba(255,255,255,0.6);
+        position: relative;
     }
+    
     .time-badge {
         float: right;
-        background-color: rgba(0,0,0,0.3);
+        background-color: rgba(0, 0, 0, 0.35);
         color: #ffffff;
-        padding: 1px 3px;
-        border-radius: 3px;
-        font-size: 0.6rem;
+        padding: 1px 5px;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        font-weight: 600;
     }
+
     div.stButton > button {
         background-color: #238636;
         color: white;
@@ -187,37 +227,51 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- NAVIGATIE BALK ---
-st.markdown('<div class="top-nav">', unsafe_allow_html=True)
-c_nav1, c_nav2, _ = st.columns([1, 1.5, 4])
-with c_nav1:
-    if st.button("📅 Rooster", key="btn_nav_rooster"):
+# --- SOMTODAY BOVENBALK ---
+st.markdown("""
+    <div class="somtoday-nav">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #30363d; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff;">👤</div>
+            <div class="nav-tabs">
+                <span class="nav-tab-active">📅 Rooster</span>
+                <span>📚 Studiewijzer</span>
+                <span>📊 Cijfers</span>
+                <span>💬 Berichten</span>
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Navigatie knoppen binnen Streamlit
+c_btn1, c_btn2, _ = st.columns([1, 1.5, 4])
+with c_btn1:
+    if st.button("📅 Naar Rooster", key="nav_r"):
         go_to_page("Rooster")
         st.rerun()
-with c_nav2:
-    if st.button("➕ Afspraak / PTA Inplannen", key="btn_nav_create"):
+with c_btn2:
+    if st.button("➕ Afspraak / Inplannen", key="nav_i"):
         go_to_page("Inplannen")
         st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
 
+st.markdown("---")
 events = get_all_events()
 
 # ==========================================
-# PAGINA 1: ROOSTER & VOORTGANG
+# PAGINA 1: ROOSTER (SOMTODAY GRID)
 # ==========================================
 if st.session_state['current_page'] == "Rooster":
     col_h1, col_h2 = st.columns([3, 1])
     with col_h1:
-        st.title("📅 Somtoday Rooster & Voortgang")
-        st.caption("Jouw studie- en toetsrooster met rasterlijnen tot 22:00 uur ('s avonds).")
+        st.title("📅 Rooster & Voortgang")
+        st.caption("Jouw complete school- en oefenrooster in Somtoday-stijl (tot 22:00 uur).")
     with col_h2:
-        if st.button("➕ Nieuwe Afspraak", key="btn_top_create"):
+        if st.button("➕ Afspraak inplannen", key="top_inplannen"):
             go_to_page("Inplannen")
             st.rerun()
 
     st.markdown("---")
 
-    # Voortgangsbalken per vak
+    # Voortgangsbalken
     study_events = [e for e in events if e['type'] == 'study']
     if study_events:
         st.subheader("📊 Voortgang per Vak (% Geleerd)")
@@ -237,66 +291,67 @@ if st.session_state['current_page'] == "Rooster":
     with col_d1:
         start_week = st.date_input("Week van (Maandag):", datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday()))
 
-    days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]
+    days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag"]
+    hours = list(range(6, 23)) # Van 06:00 tot 22:00 uur
+
+    # HTML Grid opbouw voor naadloos aansluitende dagen
+    grid_html = '<div class="grid-container">'
     
-    # Raster uren van 08:00 tot 22:00 ('s avonds)
-    hours = list(range(8, 23)) 
-    
-    grid_cols = st.columns([0.6, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4, 1.4])
-    
-    with grid_cols[0]:
-        st.markdown('<div class="grid-header">Tijd</div>', unsafe_allow_html=True)
+    # Header rij
+    grid_html += '<div class="time-col-header"></div>'
     for i, day_name in enumerate(days_nl):
         cur_d = start_week + datetime.timedelta(days=i)
-        with grid_cols[i+1]:
-            st.markdown(f'<div class="grid-header">{day_name[:3]}<br><small>{cur_d.day}/{cur_d.month}</small></div>', unsafe_allow_html=True)
-
+        grid_html += f'<div class="day-header">{day_name}<br><span style="font-size:0.75rem; color:#8b949e;">{cur_d.day}/{cur_d.month}</span></div>'
+    
+    # Uur rijen
     for hour in hours:
-        with grid_cols[0]:
-            st.markdown(f'<div class="time-label">{hour:02d}:00</div>', unsafe_allow_html=True)
-            
-        for i in range(7):
+        grid_html += f'<div class="time-label">{hour:02d}:00</div>'
+        for i in range(5):
             cur_d = start_week + datetime.timedelta(days=i)
-            with grid_cols[i+1]:
-                cell_items = [e for e in events if e['date'] == cur_d and e['start_hour'] == hour]
-                
-                cell_html = '<div class="grid-cell">'
-                for item in cell_items:
-                    bg_col = get_color(item['title'])
-                    if item['type'] == 'exam':
-                        cell_html += f"""
-                        <div class="agenda-card" style="background-color: {bg_col}; border-left: 4px solid #ffeb3b;">
-                            <span class="time-badge">{item['start_time']}</span>
-                            <b>🔴 TOETS: {item['title']}</b><br>
-                            <small>📍 {item.get('location', 'N.v.t.')} ({item['duration']}u)</small>
-                        </div>
-                        """
-                    else:
-                        opacity = "0.4" if item['completed'] else "1.0"
-                        cell_html += f"""
-                        <div class="agenda-card" style="background-color: {bg_col}; opacity: {opacity};">
-                            <span class="time-badge">{item['start_time']}</span>
-                            <b>📖 {item['title']}</b><br>
-                            <small>{item['topic']}</small>
-                        </div>
-                        """
-                cell_html += '</div>'
-                st.markdown(cell_html, unsafe_allow_html=True)
-                
-                # Checkboxes voor interactie onder het raster
-                for item in cell_items:
-                    if item['type'] == 'study':
-                        is_comp = st.checkbox(f"Gereed: {item['title']} ({item['topic']}) op {cur_d.strftime('%d-%m')} {item['start_time']}", value=item['completed'], key=f"cb_{item['id']}")
-                        if is_comp != item['completed']:
-                            update_task_completion(item['id'], is_comp)
-                            st.rerun()
+            cell_items = [e for e in events if e['date'] == cur_d and e['start_hour'] == hour]
+            
+            grid_html += '<div class="grid-cell">'
+            for item in cell_items:
+                bg_col = get_color(item['title'])
+                if item['type'] == 'exam':
+                    grid_html += f"""
+                    <div class="agenda-card" style="background-color: {bg_col}; border-left: 4px solid #f1e05a;">
+                        <span class="time-badge">Toets {item['start_time']}</span>
+                        <b>🔴 {item['title']}</b><br>
+                        <small>📍 {item.get('location', 'N.v.t.')}</small>
+                    </div>
+                    """
+                else:
+                    opacity = "0.4" if item['completed'] else "1.0"
+                    grid_html += f"""
+                    <div class="agenda-card" style="background-color: {bg_col}; opacity: {opacity}; border-left: 4px solid #58a6ff;">
+                        <span class="time-badge">{item['start_time']}</span>
+                        <b>📖 {item['title']}</b><br>
+                        <small>{item['topic']}</small>
+                    </div>
+                    """
+            grid_html += '</div>'
+            
+    grid_html += '</div>'
+    st.markdown(grid_html, unsafe_allow_html=True)
+
+    # Interaktieve checkboxes voor studietaken onder het rooster
+    st.markdown("### 📋 Studietaken Afvinken")
+    if study_events:
+        for item in study_events:
+            is_comp = st.checkbox(f"Gereed: {item['title']} — *{item['topic']}* op {item['date'].strftime('%d-%m')} om {item['start_time']}", value=item['completed'], key=f"cb_{item['id']}")
+            if is_comp != item['completed']:
+                update_task_completion(item['id'], is_comp)
+                st.rerun()
+    else:
+        st.info("Geen studietaken ingepland in deze week.")
 
 # ==========================================
 # PAGINA 2: INPLANNEN FORMULIER
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
-    st.caption("Oefentaken worden automatisch slim ingepland tussen 16:00 en 22:00 uur zonder overlappingen met toetsen.")
+    st.caption("Oefentaken worden automatisch slim ingepland tussen 16:00 en 22:00 uur zonder overlappingen.")
 
     st.markdown("---")
 
@@ -347,7 +402,6 @@ elif st.session_state['current_page'] == "Inplannen":
                 "Vrijdag": vr, "Zaterdag": za, "Zondag": zo
             }
             
-            # Verzamel geldige studiedagen
             cur_d = start_date
             valid_dates = []
             days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]
@@ -361,25 +415,20 @@ elif st.session_state['current_page'] == "Inplannen":
             if not valid_dates:
                 st.warning("Geen geldige studiedagen geselecteerd binnen deze periode!")
             else:
-                # Bepaal beschikbare uren tussen 16:00 (4 PM) en 22:00 (10 PM)
-                # Uren: 16, 17, 18, 19, 20, 21
+                # Studeren uren uitsluitend tussen 16:00 (4 PM) en 21:00 (laatste blok 21:00 tot 22:00)
                 allowed_study_hours = [16, 17, 18, 19, 20, 21]
                 
-                # Haal bestaande events op om overlappingen te voorkomen
                 existing_events = get_all_events()
                 busy_slots = set()
                 for ev in existing_events:
                     busy_slots.add((ev['date'], ev['start_hour']))
 
-                # Verdeel onderwerpen over beschikbare vrije slots tussen 16:00 en 22:00
-                assigned_count = 0
                 for topic in topics_list:
                     scheduled = False
                     for date in valid_dates:
                         if scheduled:
                             break
                         for h in allowed_study_hours:
-                            # Controleer of dit uur op deze dag al bezet is door een toets of andere taak
                             if (date, h) not in busy_slots:
                                 task_id = f"{exam_title}_{date}_{h}_{topic}".replace(" ", "_")
                                 start_time_str = f"{h:02d}:00"
@@ -399,10 +448,9 @@ elif st.session_state['current_page'] == "Inplannen":
                                 save_event_to_db(new_task)
                                 busy_slots.add((date, h))
                                 scheduled = True
-                                assigned_count +=- 0 # dummy
                                 break
 
-                # Sla de toets zelf op op de toetsdag en toets-tijd
+                # Toets opslaan
                 exam_task_id = f"exam_{exam_title}_{exam_date}".replace(" ", "_")
                 exam_event = {
                     "id": exam_task_id,
@@ -418,6 +466,6 @@ elif st.session_state['current_page'] == "Inplannen":
                 }
                 save_event_to_db(exam_event)
 
-                st.success(f"🎉 Succesvol ingepland! Alle {len(topics_list)} oefentaken zijn slim verdeeld tussen 16:00 en 22:00 zonder overlappingen.")
+                st.success(f"🎉 Succesvol ingepland! Alle oefentaken zijn slim verdeeld tussen 16:00 en 22:00 uur.")
                 go_to_page("Rooster")
                 st.rerun()
