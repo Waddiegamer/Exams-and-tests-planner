@@ -109,7 +109,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#263242")
 
-# --- SOMTODAY STYLING & ULTIEME CONTRAST FIX VOOR INVOERVELDEN ---
+# --- SOMTODAY STYLING & ULTIEME CONTRAST & POPOVER FIX ---
 st.markdown("""
     <style>
     .stApp {
@@ -128,7 +128,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* KRITISCHE FIX VOOR DATUM/TIJD INVOERVELDEN (WEG MET DE WITTE BLOKKEN) */
+    /* Invoervelden strak donker met witte tekst */
     div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {
         background-color: #1a1e26 !important;
         border-color: #4a5568 !important;
@@ -143,9 +143,29 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Specifieke Streamlit widget input elementen geforceerd donker maken */
     .stDateInput div, .stTimeInput div, .stTextInput div {
         background-color: #1a1e26 !important;
+        color: #ffffff !important;
+    }
+
+    /* FIX VOOR WITTE POPOUPS, DROPDOWNS EN KALENDERS */
+    div[data-baseweb="popover"], div[data-baseweb="menu"], div[data-baseweb="calendar"], ul[data-baseweb="menu"] {
+        background-color: #1a1e26 !important;
+        color: #ffffff !important;
+        border: 1px solid #4a5568 !important;
+    }
+
+    div[data-baseweb="menu"] div, ul[data-baseweb="menu"] li, div[data-baseweb="calendar"] button {
+        color: #ffffff !important;
+        background-color: transparent !important;
+    }
+
+    ul[data-baseweb="menu"] li:hover, div[data-baseweb="calendar"] button:hover {
+        background-color: #2c324f !important;
+        color: #ffffff !important;
+    }
+
+    div[data-baseweb="calendar"] div {
         color: #ffffff !important;
     }
 
