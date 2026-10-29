@@ -1,3 +1,10 @@
+Hier is de aangepaste code. Ik heb de CSS-styling extra aangescherpt zodat **alle** labels, koppen en tekst (inclusief *Startdatum met leren:* en alle andere datumpickers/invoervelden) nu geforceerd **helderwit op de donkere achtergrond** worden weergegeven. Zo is alles perfect leesbaar en strak in Somtoday-stijl!
+
+---
+
+### De volledige code voor `app.py`:
+
+```python
 import streamlit as st
 import datetime
 import math
@@ -109,38 +116,41 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#263242")
 
-# --- SOMTODAY EXACTE STYLING & PERFECT CONTRAST FIX ---
+# --- SOMTODAY STYLING & ULTIEME CONTRAST FIX ---
 st.markdown("""
     <style>
-    /* Hoofdachtergrond van Somtoday */
     .stApp {
         background-color: #12151a;
         color: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Hoge contrasten voor alle titels en teksten */
-    h1, h2, h3, h4, label, p, span, div {
+    /* Forceer helderwit op ALLE koppen, labels en teksten, inclusief datumpickers en formulierelementen */
+    h1, h2, h3, h4, p, span, div, 
+    label, 
+    .stTextInput label, .stDateInput label, .stTimeInput label, .stSelectbox label, .stTextArea label,
+    p[data-testid="stMarkdownContainer"] {
         color: #ffffff !important;
         font-weight: 600 !important;
     }
 
-    /* Fix voor Invoervelden (Datums, Tijden, TextInputs) */
-    input, textarea, select, div[data-baseweb="select"], div[data-baseweb="input"] {
+    /* Invoervelden, Datums en Tijden strak donker met witte tekst */
+    input, textarea, select, 
+    div[data-baseweb="select"] > div, 
+    div[data-baseweb="base-input"],
+    input[type="text"], input[type="date"], input[type="time"] {
         background-color: #1a1e26 !important;
         color: #ffffff !important;
-        border: 1px solid #3e4c5e !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border: 1px solid #4a5568 !important;
         border-radius: 6px !important;
     }
 
-    /* Datumpicker & Tijdinputs specifiek fixen */
-    input[type="date"], input[type="time"] {
-        background-color: #1a1e26 !important;
+    .stDateInput input, .stTimeInput input {
         color: #ffffff !important;
-        filter: invert(0) !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* Target specifieke Streamlit widget containers */
     div[data-testid="stForm"] {
         background-color: #161a22;
         padding: 20px;
@@ -148,7 +158,7 @@ st.markdown("""
         border: 1px solid #28313e;
     }
     
-    /* Rooster Grid Naadloos Aansluitend */
+    /* Rooster Grid */
     .grid-container {
         display: grid;
         grid-template-columns: 65px repeat(5, 1fr);
@@ -197,7 +207,6 @@ st.markdown("""
         background-color: #12151a;
     }
 
-    /* Les & Toets Kaarten in Somtoday stijl */
     .agenda-card {
         background-color: #263242;
         border-radius: 6px;
@@ -242,23 +251,23 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* Actieknoppen opvallend groen */
-    button[kind="primary"], div.stButton > button, button[data-testid="baseButton-secondaryFormSubmit"] {
+    /* DUIDELIJKE GROENE OPSLAANKNOP MET WITTE TEKST */
+    div.stButton > button, button[data-testid="baseButton-secondaryFormSubmit"], button[type="submit"] {
         background-color: #238636 !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         border-radius: 6px !important;
-        border: none !important;
+        border: 1px solid #2ea043 !important;
         font-weight: bold !important;
         padding: 0.6rem 1.5rem !important;
-        width: auto !important;
     }
-    button:hover {
+    div.stButton > button:hover, button[type="submit"]:hover {
         background-color: #2ea043 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- DIRECTE NAVIGATIEK NOPPEN ---
+# --- NAVIGATIEKNOPPEN ---
 c_btn1, c_btn2, _ = st.columns([1.2, 1.8, 4])
 with c_btn1:
     if st.button("📅 Naar Rooster", key="nav_r"):
@@ -284,7 +293,6 @@ if st.session_state['current_page'] == "Rooster":
             go_to_page("Inplannen")
             st.rerun()
 
-    # Voortgangsbalken per vak
     study_events = [e for e in events if e['type'] == 'study']
     if study_events:
         st.subheader("📊 Voortgang per Vak (% Geleerd)")
@@ -305,18 +313,14 @@ if st.session_state['current_page'] == "Rooster":
         start_week = st.date_input("Selecteer week (Maandag):", datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday()))
 
     days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag"]
-    hours = list(range(6, 23)) # Uren van 06:00 tot 22:00
+    hours = list(range(6, 23))
 
-    # HTML Grid opbouw
     grid_html = '<div class="grid-container">'
-    
-    # Header
     grid_html += '<div class="time-col-header"></div>'
     for i, day_name in enumerate(days_nl):
         cur_d = start_week + datetime.timedelta(days=i)
         grid_html += f'<div class="day-header">{day_name} {cur_d.day}</div>'
     
-    # Uur-rijen
     for hour in hours:
         grid_html += f'<div class="time-label">{hour:02d}:00</div>'
         for i in range(5):
@@ -359,7 +363,7 @@ if st.session_state['current_page'] == "Rooster":
         st.info("Geen studietaken ingepland in deze periode.")
 
 # ==========================================
-# PAGINA 2: INPLANNEN FORMULIER (ZONDER SCREENSHOT OPTIE)
+# PAGINA 2: INPLANNEN FORMULIER
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
@@ -477,3 +481,5 @@ elif st.session_state['current_page'] == "Inplannen":
                 st.success("🎉 Succesvol ingepland! Alle oefentaken zijn slim verdeeld tussen 16:00 en 22:00 uur.")
                 go_to_page("Rooster")
                 st.rerun()
+
+```
