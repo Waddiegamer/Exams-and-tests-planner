@@ -3,7 +3,7 @@ import datetime
 import math
 import sqlite3
 
-# --- PAGINA CONFIGURATIE (PC GEOPTIMALISEERD) ---
+# --- PAGINA CONFIGURATIE ---
 st.set_page_config(
     page_title="Somtoday Rooster",
     page_icon="📅",
@@ -81,7 +81,7 @@ if 'current_page' not in st.session_state:
 def go_to_page(page_name):
     st.session_state['current_page'] = page_name
 
-# Gefilterde vakkenlijst (zonder CKV, LO, maatschappijleer, etc.)
+# Gefilterde vakkenlijst
 ALLOWED_SUBJECTS = [
     "Bedrijfseconomie",
     "Duitse taal en literatuur",
@@ -94,89 +94,12 @@ ALLOWED_SUBJECTS = [
     "Wiskunde B"
 ]
 
-SUBJECT_COLORS = {
-    "Bedrijfseconomie": "#263242",
-    "Wiskunde B": "#263242",
-    "Engels": "#263242",
-    "Duitse taal en literatuur": "#263242",
-    "Nederlands": "#263242",
-    "Godsdienst": "#263242",
-    "Natuurkunde": "#263242",
-    "Scheikunde": "#263242",
-    "Nat leven techniek": "#263242"
-}
-
 def get_color(subject):
-    return SUBJECT_COLORS.get(subject, "#263242")
+    return "#263242"
 
-# --- SOMTODAY STYLING & ULTIEME CONTRAST & POPOVER FIX ---
+# --- STYLING ---
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #12151a;
-        color: #ffffff;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    
-    /* Forceer helderwit op ALLE koppen, labels en teksten */
-    h1, h2, h3, h4, p, span, div, label {
-        color: #ffffff !important;
-    }
-
-    [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }
-
-    /* Invoervelden strak donker met witte tekst */
-    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {
-        background-color: #1a1e26 !important;
-        border-color: #4a5568 !important;
-        color: #ffffff !important;
-    }
-
-    input, textarea, select, 
-    input[type="text"], input[type="date"], input[type="time"] {
-        background-color: #1a1e26 !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        border: none !important;
-    }
-
-    .stDateInput div, .stTimeInput div, .stTextInput div {
-        background-color: #1a1e26 !important;
-        color: #ffffff !important;
-    }
-
-    /* FIX VOOR WITTE POPOUPS, DROPDOWNS EN KALENDERS */
-    div[data-baseweb="popover"], div[data-baseweb="menu"], div[data-baseweb="calendar"], ul[data-baseweb="menu"] {
-        background-color: #1a1e26 !important;
-        color: #ffffff !important;
-        border: 1px solid #4a5568 !important;
-    }
-
-    div[data-baseweb="menu"] div, ul[data-baseweb="menu"] li, div[data-baseweb="calendar"] button {
-        color: #ffffff !important;
-        background-color: transparent !important;
-    }
-
-    ul[data-baseweb="menu"] li:hover, div[data-baseweb="calendar"] button:hover {
-        background-color: #2c324f !important;
-        color: #ffffff !important;
-    }
-
-    div[data-baseweb="calendar"] div {
-        color: #ffffff !important;
-    }
-
-    div[data-testid="stForm"] {
-        background-color: #161a22;
-        padding: 20px;
-        border-radius: 8px;
-        border: 1px solid #28313e;
-    }
-    
-    /* Rooster Grid */
     .grid-container {
         display: grid;
         grid-template-columns: 65px repeat(5, 1fr);
@@ -185,10 +108,9 @@ st.markdown("""
         border-radius: 6px;
         overflow: hidden;
     }
-    
     .day-header {
         background-color: #1a1e26;
-        color: #ffffff !important;
+        color: #ffffff;
         text-align: center;
         padding: 12px 4px;
         font-weight: bold;
@@ -196,15 +118,13 @@ st.markdown("""
         border-bottom: 1px solid #232a35;
         font-size: 0.95rem;
     }
-    
     .time-col-header {
         background-color: #1a1e26;
         border-right: 1px solid #232a35;
         border-bottom: 1px solid #232a35;
     }
-
     .time-label {
-        color: #a0aec0 !important;
+        color: #a0aec0;
         font-size: 0.78rem;
         text-align: right;
         padding-right: 8px;
@@ -215,7 +135,6 @@ st.markdown("""
         background-color: #12151a;
         font-weight: 600;
     }
-    
     .grid-cell {
         height: 65px;
         border-bottom: 1px solid #1e242d;
@@ -224,62 +143,55 @@ st.markdown("""
         position: relative;
         background-color: #12151a;
     }
-
     .agenda-card {
         background-color: #263242;
         border-radius: 6px;
         padding: 6px 8px;
-        color: #ffffff !important;
+        color: #ffffff;
         font-size: 0.82rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         margin-bottom: 2px;
         position: relative;
         border-left: 3px solid #58a6ff;
     }
-
     .exam-card {
         background-color: #263242;
         border-radius: 6px;
         padding: 6px 8px;
-        color: #ffffff !important;
+        color: #ffffff;
         font-size: 0.82rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         margin-bottom: 2px;
         position: relative;
         border-left: 3px solid #e3b341;
     }
-    
     .time-badge {
         float: right;
         background-color: #3b82f6;
-        color: #ffffff !important;
+        color: #ffffff;
         padding: 1px 7px;
         border-radius: 12px;
         font-size: 0.7rem;
         font-weight: bold;
     }
-
     .exam-badge {
         float: right;
         background-color: #d97706;
-        color: #ffffff !important;
+        color: #ffffff;
         padding: 1px 7px;
         border-radius: 12px;
         font-size: 0.7rem;
         font-weight: bold;
     }
-
-    /* GROENE OPSLAANKNOP MET WITTE TEKST */
-    div.stButton > button, button[data-testid="baseButton-secondaryFormSubmit"], button[type="submit"] {
+    div.stButton > button {
         background-color: #238636 !important;
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
         border-radius: 6px !important;
-        border: 1px solid #2ea043 !important;
+        border: none !important;
         font-weight: bold !important;
         padding: 0.6rem 1.5rem !important;
     }
-    div.stButton > button:hover, button[type="submit"]:hover {
+    div.stButton > button:hover {
         background-color: #2ea043 !important;
     }
     </style>
@@ -369,7 +281,6 @@ if st.session_state['current_page'] == "Rooster":
     grid_html += '</div>'
     st.markdown(grid_html, unsafe_allow_html=True)
 
-    # Interactieve checkboxes
     st.markdown("### 📋 Studietaken Afvinken")
     if study_events:
         for item in study_events:
