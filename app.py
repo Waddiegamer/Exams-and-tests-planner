@@ -109,7 +109,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#263242")
 
-# --- SOMTODAY STYLING & ULTIEME CONTRAST FIX ---
+# --- STYLING & WIDGET LABEL CONTRAST FIX ---
 st.markdown("""
     <style>
     .stApp {
@@ -118,16 +118,17 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Forceer helderwit op ALLE koppen, labels en teksten, inclusief datumpickers en formulierelementen */
-    h1, h2, h3, h4, p, span, div, 
-    label, 
-    .stTextInput label, .stDateInput label, .stTimeInput label, .stSelectbox label, .stTextArea label,
-    p[data-testid="stMarkdownContainer"] {
+    /* FORCEER HELDERWIT OP ALLE TEKSTEN, KOPPEN EN WIDGET LABELS (INCL. STARTDATUM MET LEREN) */
+    h1, h2, h3, h4, p, span, div, label {
         color: #ffffff !important;
-        font-weight: 600 !important;
     }
 
-    /* Invoervelden, Datums en Tijden strak donker met witte tekst */
+    [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    /* Invoervelden strak donker met witte tekst */
     input, textarea, select, 
     div[data-baseweb="select"] > div, 
     div[data-baseweb="base-input"],
@@ -244,7 +245,7 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* DUIDELIJKE GROENE OPSLAANKNOP MET WITTE TEKST */
+    /* GROENE OPSLAANKNOP MET WITTE TEKST */
     div.stButton > button, button[data-testid="baseButton-secondaryFormSubmit"], button[type="submit"] {
         background-color: #238636 !important;
         color: #ffffff !important;
