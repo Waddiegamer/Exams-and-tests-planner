@@ -81,7 +81,7 @@ if 'current_page' not in st.session_state:
 def go_to_page(page_name):
     st.session_state['current_page'] = page_name
 
-# Gefilterde vakkenlijst
+# Gefilterde vakkenlijst (zonder CKV, LO, maatschappijleer, etc.)
 ALLOWED_SUBJECTS = [
     "Bedrijfseconomie",
     "Duitse taal en literatuur",
@@ -109,7 +109,7 @@ SUBJECT_COLORS = {
 def get_color(subject):
     return SUBJECT_COLORS.get(subject, "#263242")
 
-# --- STYLING & WIDGET LABEL CONTRAST FIX ---
+# --- SOMTODAY STYLING & ULTIEME CONTRAST FIX VOOR INVOERVELDEN ---
 st.markdown("""
     <style>
     .stApp {
@@ -118,7 +118,7 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* FORCEER HELDERWIT OP ALLE TEKSTEN, KOPPEN EN WIDGET LABELS (INCL. STARTDATUM MET LEREN) */
+    /* Forceer helderwit op ALLE koppen, labels en teksten */
     h1, h2, h3, h4, p, span, div, label {
         color: #ffffff !important;
     }
@@ -128,21 +128,25 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* Invoervelden strak donker met witte tekst */
+    /* KRITISCHE FIX VOOR DATUM/TIJD INVOERVELDEN (WEG MET DE WITTE BLOKKEN) */
+    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"] {
+        background-color: #1a1e26 !important;
+        border-color: #4a5568 !important;
+        color: #ffffff !important;
+    }
+
     input, textarea, select, 
-    div[data-baseweb="select"] > div, 
-    div[data-baseweb="base-input"],
     input[type="text"], input[type="date"], input[type="time"] {
         background-color: #1a1e26 !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
-        border: 1px solid #4a5568 !important;
-        border-radius: 6px !important;
+        border: none !important;
     }
 
-    .stDateInput input, .stTimeInput input {
+    /* Specifieke Streamlit widget input elementen geforceerd donker maken */
+    .stDateInput div, .stTimeInput div, .stTextInput div {
+        background-color: #1a1e26 !important;
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
     }
 
     div[data-testid="stForm"] {
