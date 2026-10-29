@@ -5,13 +5,13 @@ import sqlite3
 
 # --- PAGINA CONFIGURATIE ---
 st.set_page_config(
-    page_title="Somtoday Rooster",
+    page_title="Somtoday Rooster & PTA Planner",
     page_icon="📅",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- DATABASE INITIALISATIE (SQLITE) ---
+# --- DATABASE INITIALISATIE & AUTOMATISCHE MIGRATIE ---
 def init_db():
     conn = sqlite3.connect('planner.db')
     c = conn.cursor()
@@ -29,6 +29,8 @@ def init_db():
             completed INTEGER
         )
     ''')
+    # Automatische migratie voor oude studietaken naar 30 minuten (0.5 uur)
+    c.execute("UPDATE events SET duration = 0.5 WHERE type = 'study'")
     conn.commit()
     conn.close()
 
@@ -94,8 +96,23 @@ ALLOWED_SUBJECTS = [
     "Wiskunde B"
 ]
 
+# Unieke Somtoday-kleuren per vak
+SUBJECT_COLORS = {
+    "Bedrijfseconomie": "#2c3b53",
+    "Wiskunde B": "#243b55",
+    "Engels": "#1e3d2f",
+    "Engelse taal en literatuur": "#1e3d2f",
+    "Duitse taal en literatuur": "#3d2c29",
+    "Nederlands": "#4a2828",
+    "Nederlandse taal en literatuur": "#4a2828",
+    "Godsdienst": "#1c3d42",
+    "Natuurkunde": "#312247",
+    "Scheikunde": "#421c38",
+    "Nat leven techniek": "#42381c"
+}
+
 def get_color(subject):
-    return "#263242"
+    return SUBJECT_COLORS.get(subject, "#263242")
 
 # --- STYLING ---
 st.markdown("""
@@ -138,49 +155,36 @@ st.markdown("""
     .grid-cell {
         height: 65px;
         border-bottom: 1px solid #1e242d;
-        border-right: 1px solid #232a35;
+        border-right: 1px solid #30363d;
         padding: 2px;
         position: relative;
         background-color: #12151a;
     }
     .agenda-card {
-        background-color: #263242;
-        border-radius: 6px;
-        padding: 6px 8px;
+        border-radius: 5px;
+        padding: 3px 6px;
         color: #ffffff;
-        font-size: 0.82rem;
+        font-size: 0.76rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        margin-bottom: 2px;
         position: relative;
-        border-left: 3px solid #58a6ff;
-    }
-    .exam-card {
-        background-color: #263242;
-        border-radius: 6px;
-        padding: 6px 8px;
-        color: #ffffff;
-        font-size: 0.82rem;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        margin-bottom: 2px;
-        position: relative;
-        border-left: 3px solid #e3b341;
+        z-index: 2;
     }
     .time-badge {
         float: right;
-        background-color: #3b82f6;
+        background-color: rgba(0,0,0,0.35);
         color: #ffffff;
-        padding: 1px 7px;
-        border-radius: 12px;
-        font-size: 0.7rem;
+        padding: 1px 5px;
+        border-radius: 8px;
+        font-size: 0.65rem;
         font-weight: bold;
     }
     .exam-badge {
         float: right;
         background-color: #d97706;
         color: #ffffff;
-        padding: 1px 7px;
-        border-radius: 12px;
-        font-size: 0.7rem;
+        padding: 1px 5px;
+        border-radius: 8px;
+        font-size: 0.65rem;
         font-weight: bold;
     }
     div.stButton > button {
@@ -223,6 +227,7 @@ if st.session_state['current_page'] == "Rooster":
             go_to_page("Inplannen")
             st.rerun()
 
+    # Voortgangsbalken per vak
     study_events = [e for e in events if e['type'] == 'study']
     if study_events:
         st.subheader("📊 Voortgang per Vak (% Geleerd)")
@@ -259,20 +264,31 @@ if st.session_state['current_page'] == "Rooster":
             
             grid_html += '<div class="grid-cell">'
             for item in cell_items:
+                bg_col = get_color(item['title'])
+                
+                # Bereken verticaal offset-percentage op basis van minuten (bijv. 8:40 -> 40 min = 66% van het uur)
+                try:
+                    time_parts = item['start_time'].split(':')
+                    minutes = int(time_parts[1]) if len(time_parts) > 1 else 0
+                except:
+                    minutes = 0
+                
+                margin_top_px = int((minutes / 60.0) * 35) # Verschuif binnen de cel
+                
                 if item['type'] == 'exam':
                     grid_html += f"""
-                    <div class="exam-card">
+                    <div class="agenda-card" style="background-color: {bg_col}; border-left: 4px solid #e3b341; margin-top: {margin_top_px}px;">
                         <span class="exam-badge">Toets {item['start_time']}</span>
-                        <b style="color:#ffffff;">{item['title']}</b><br>
+                        <b style="color:#ffffff;">🔴 {item['title']}</b><br>
                         <small style="color:#f0f0f0;">📍 {item.get('location', 'N.v.t.')}</small>
                     </div>
                     """
                 else:
                     opacity = "0.45" if item['completed'] else "1.0"
                     grid_html += f"""
-                    <div class="agenda-card" style="opacity: {opacity};">
-                        <span class="time-badge">{item['start_time']}</span>
-                        <b style="color:#ffffff;">{item['title']}</b><br>
+                    <div class="agenda-card" style="background-color: {bg_col}; opacity: {opacity}; border-left: 4px solid #3b82f6; margin-top: {margin_top_px}px;">
+                        <span class="time-badge">{item['start_time']} (30m)</span>
+                        <b style="color:#ffffff;">📖 {item['title']}</b><br>
                         <small style="color:#f0f0f0;">{item['topic']}</small>
                     </div>
                     """
@@ -281,22 +297,35 @@ if st.session_state['current_page'] == "Rooster":
     grid_html += '</div>'
     st.markdown(grid_html, unsafe_allow_html=True)
 
-    st.markdown("### 📋 Studietaken Afvinken")
+    # --- INKLAPBARE LIJSTEN PER VAK VOOR STUDIETAKEN AFVINKEN ---
+    st.markdown("### 📋 Studietaken Afvinken per Vak")
     if study_events:
-        for item in study_events:
-            is_comp = st.checkbox(f"Gereed: {item['title']} — {item['topic']} op {item['date'].strftime('%d-%m')} om {item['start_time']}", value=item['completed'], key=f"cb_{item['id']}")
-            if is_comp != item['completed']:
-                update_task_completion(item['id'], is_comp)
-                st.rerun()
+        subjects_in_db = sorted(list(set([e['title'] for e in study_events])))
+        
+        for subj in subjects_in_db:
+            subj_tasks = [e for e in study_events if e['title'] == subj]
+            done_count = sum(1 for e in subj_tasks if e['completed'])
+            total_count = len(subj_tasks)
+            
+            with st.expander(f"📚 **{subj}** — ({done_count}/{total_count} afgevinkt)", expanded=False):
+                for item in sorted(subj_tasks, key=lambda x: (x['date'], x['start_hour'])):
+                    is_comp = st.checkbox(
+                        f"**{item['topic']}** — {item['date'].strftime('%d-%m-%Y')} om {item['start_time']} (30 min)", 
+                        value=item['completed'], 
+                        key=f"cb_{item['id']}"
+                    )
+                    if is_comp != item['completed']:
+                        update_task_completion(item['id'], is_comp)
+                        st.rerun()
     else:
-        st.info("Geen studietaken ingepland in deze periode.")
+        st.info("Er zijn op dit moment geen studietaken ingepland.")
 
 # ==========================================
 # PAGINA 2: INPLANNEN FORMULIER
 # ==========================================
 elif st.session_state['current_page'] == "Inplannen":
     st.title("➕ Nieuwe PTA Toets of Studeersessie Inplannen")
-    st.write("Oefentaken worden automatisch tussen **16:00 en 22:00 uur** ingepland zonder overlappingen.")
+    st.write("Oefentaken worden automatisch gelijkmatig verspreid (minimaal 2x per onderwerp in blokken van 30 min) tussen 16:00 en 22:00 uur.")
 
     st.markdown("---")
 
@@ -318,7 +347,7 @@ elif st.session_state['current_page'] == "Inplannen":
         raw_topics = st.text_area("Onderwerpen/Hoofdstukken (gescheiden door komma):", default_text)
 
         st.header("3. Planningsperiode & Studiedagen")
-        start_date = st.date_input("Startdatum met leren:", datetime.date.today())
+        start_date = st.date_input("Startdatum met leren (vandaag of later):", datetime.date.today())
 
         st.write("Op welke dagen wil je studeren (tussen 16:00 en 22:00)?")
         c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
@@ -345,7 +374,10 @@ elif st.session_state['current_page'] == "Inplannen":
                 "Vrijdag": vr, "Zaterdag": za, "Zondag": zo
             }
             
-            cur_d = start_date
+            today = datetime.date.today()
+            effective_start = max(start_date, today)
+            
+            cur_d = effective_start
             valid_dates = []
             days_nl = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]
             
@@ -356,7 +388,7 @@ elif st.session_state['current_page'] == "Inplannen":
                 cur_d += datetime.timedelta(days=1)
 
             if not valid_dates:
-                st.warning("Geen geldige studiedagen geselecteerd binnen deze periode!")
+                st.warning("Geen geldige studiedagen geselecteerd in de periode voor de toets!")
             else:
                 allowed_study_hours = [16, 17, 18, 19, 20, 21]
                 existing_events = get_all_events()
@@ -364,32 +396,45 @@ elif st.session_state['current_page'] == "Inplannen":
                 for ev in existing_events:
                     busy_slots.add((ev['date'], ev['start_hour']))
 
+                tasks_to_schedule = []
                 for topic in topics_list:
+                    tasks_to_schedule.append(f"{topic} (Sessie 1)")
+                    tasks_to_schedule.append(f"{topic} (Sessie 2 - Herhaling)")
+
+                total_tasks = len(tasks_to_schedule)
+                num_days = len(valid_dates)
+                day_pointer = 0
+                
+                for task_title in tasks_to_schedule:
                     scheduled = False
-                    for date in valid_dates:
-                        if scheduled:
-                            break
+                    for _ in range(num_days):
+                        target_date = valid_dates[day_pointer % num_days]
+                        
                         for h in allowed_study_hours:
-                            if (date, h) not in busy_slots:
-                                task_id = f"{exam_title}_{date}_{h}_{topic}".replace(" ", "_")
+                            if (target_date, h) not in busy_slots:
+                                task_id = f"{exam_title}_{target_date}_{h}_{task_title}".replace(" ", "_").replace("(", "").replace(")", "")
                                 start_time_str = f"{h:02d}:00"
                                 
                                 new_task = {
                                     "id": task_id,
                                     "type": "study",
                                     "title": exam_title,
-                                    "topic": topic,
-                                    "date": date,
+                                    "topic": task_title,
+                                    "date": target_date,
                                     "start_hour": h,
                                     "start_time": start_time_str,
-                                    "duration": 1.0,
+                                    "duration": 0.5,
                                     "location": "Thuis",
                                     "completed": 0
                                 }
                                 save_event_to_db(new_task)
-                                busy_slots.add((date, h))
+                                busy_slots.add((target_date, h))
                                 scheduled = True
+                                day_pointer += 1
                                 break
+                        if scheduled:
+                            break
+                        day_pointer += 1
 
                 # Toets opslaan
                 exam_task_id = f"exam_{exam_title}_{exam_date}".replace(" ", "_")
@@ -407,6 +452,6 @@ elif st.session_state['current_page'] == "Inplannen":
                 }
                 save_event_to_db(exam_event)
 
-                st.success("🎉 Succesvol ingepland! Alle oefentaken zijn slim verdeeld tussen 16:00 en 22:00 uur.")
+                st.success("🎉 Succesvol ingepland! Alle onderwerpen zijn gelijkmatig gespreid (minimaal 2x per onderwerp in blokken van 30 minuten) en hebben de eigen vak-kleur.")
                 go_to_page("Rooster")
                 st.rerun()
